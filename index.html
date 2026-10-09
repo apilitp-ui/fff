@@ -1,0 +1,1910 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Graph Theory Lab</title>
+<meta name="description" content="Graph Theory Lab for Logistics & Urban Planning. Dijkstra, Prim, Graph Coloring, Network Flow.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════ RESET & BASE ═══════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F4F6F9;--bg2:#FFFFFF;--border:#E0E0E0;--border-dk:#CCCCCC;--border-lt:#F0F0F0;
+  --text-dark:#333333;--text-light:#FFFFFF;--text-muted:#666666;
+  --primary:#2B3A4A;--primary-light:#3C4D5D;
+  --accent-blue:#2D9CDB;--accent-blue-dk:#1F7CB3;
+  --accent-green:#27AE60;--accent-green-dk:#1E8449;
+  --accent-red:#EB5757;--accent-red-dk:#C94444;
+  --accent-yellow:#F2C94C;--accent-yellow-dk:#D4A92B;
+  --shadow:rgba(0,0,0,.1);--panel-w:340px;
+  --base-font:'Inter', sans-serif;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text-dark);
+  font-family:var(--base-font);font-size:13px;line-height:1.6;
+  -webkit-tap-highlight-color:transparent;touch-action:none;
+}
+::-webkit-scrollbar{width:8px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border-dk);border-radius:4px}
+
+/* ═══════════════════ LAYOUT ═══════════════════ */
+#app{display:flex;flex-direction:column;height:100%;width:100%}
+#header{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 20px;background:var(--bg2);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;z-index:50;
+}
+#header .logo{font-size:18px;font-weight:700;color:var(--primary);white-space:nowrap}
+.hdr-sep{width:1px;height:24px;background:var(--border);flex-shrink:0}
+
+/* Toggle switch */
+.toggle-group{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--text-muted)}
+.toggle{position:relative;width:40px;height:22px;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0}
+.toggle .slider{position:absolute;inset:0;background:var(--border-dk);border-radius:20px;transition:.2s}
+.toggle .slider::before{content:'';position:absolute;width:18px;height:18px;left:2px;top:2px;
+  background:#fff;border-radius:50%;transition:.2s}
+.toggle input:checked+.slider{background:var(--accent-green)}
+.toggle input:checked+.slider::before{transform:translateX(18px)}
+
+/* Header buttons */
+.hdr-btn{
+  padding:8px 16px;font-family:var(--base-font);font-size:13px;font-weight:600;
+  background:var(--primary);color:var(--text-light);border:none;border-radius:6px;
+  cursor:pointer;white-space:nowrap;transition:0.2s;
+}
+.hdr-btn:hover{background:var(--primary-light)}
+.hdr-btn.danger{background:var(--accent-red)}
+.hdr-btn.danger:hover{background:var(--accent-red-dk)}
+.hdr-btn.gold{background:var(--accent-yellow);color:var(--text-dark)}
+.hdr-btn.gold:hover{background:var(--accent-yellow-dk)}
+.hdr-btn.blue{background:var(--accent-blue)}
+.hdr-btn.blue:hover{background:var(--accent-blue-dk)}
+
+/* ═══════════════════ MAIN AREA ═══════════════════ */
+#main{display:flex;flex:1;overflow:hidden;position:relative;padding:12px;gap:12px;}
+#canvas-wrap{flex:1;position:relative;overflow:hidden;background:#1B4D3E;border-radius:10px;box-shadow:inset 0 0 10px rgba(0,0,0,0.1)}
+#graph-canvas{display:block;width:100%;height:100%;cursor:crosshair;}
+
+/* Coords indicator */
+#coords{position:absolute;bottom:12px;left:12px;font-size:12px;font-weight:600;color:#FFFFFF;
+  background:rgba(0,0,0,.5);padding:4px 8px;border-radius:4px;pointer-events:none}
+
+/* ═══════════════════ SIDEBAR ═══════════════════ */
+#sidebar{
+  width:var(--panel-w);flex-shrink:0;
+  background:var(--bg2);border:1px solid var(--border);border-radius:10px;
+  display:flex;flex-direction:column;overflow:hidden;z-index:40;
+}
+#sidebar-toggle{
+  display:none;position:absolute;right:20px;top:70px;z-index:60;
+  width:40px;height:40px;border:none;border-radius:8px;
+  background:var(--primary);color:#fff;font-size:18px;
+  cursor:pointer;line-height:40px;text-align:center;
+}
+#sidebar-tabs{
+  display:flex;flex-shrink:0;border-bottom:1px solid var(--border);padding:8px 8px 0;gap:4px;
+}
+.tab-btn{
+  flex:1;padding:10px 4px;font-family:var(--base-font);font-size:12px;font-weight:600;
+  background:transparent;color:var(--text-muted);border:none;border-bottom:3px solid transparent;
+  cursor:pointer;white-space:nowrap;text-align:center;transition:0.2s;
+}
+.tab-btn.active{color:var(--accent-green);border-bottom-color:var(--accent-green)}
+.tab-btn:hover:not(.active){color:var(--text-dark);background:var(--border-lt);border-radius:4px 4px 0 0}
+
+#sidebar-content{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px}
+
+.panel{display:none}
+.panel.active{display:block}
+.panel h3{font-size:16px;font-weight:700;color:var(--text-dark);margin:0 0 16px;}
+.panel h4{font-size:13px;font-weight:600;color:var(--text-dark);margin:16px 0 8px}
+
+/* Fields */
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:4px}
+.field input,.field select{
+  width:100%;padding:8px 12px;font-family:var(--base-font);font-size:13px;
+  background:var(--bg);color:var(--text-dark);border:1px solid var(--border-dk);
+  border-radius:6px;outline:none;transition:0.2s;
+}
+.field input:focus,.field select:focus{border-color:var(--accent-blue);box-shadow:0 0 0 2px rgba(45,156,219,0.2)}
+
+/* Buttons */
+.btn{
+  display:inline-block;padding:8px 16px;font-family:var(--base-font);font-size:13px;font-weight:600;
+  background:var(--accent-green);color:var(--text-light);border:none;border-radius:6px;
+  cursor:pointer;margin:4px 0;text-align:center;transition:0.2s;
+}
+.btn:hover{background:var(--accent-green-dk)}
+.btn.sm{padding:6px 12px;font-size:12px}
+.btn.danger{background:var(--accent-red)}
+.btn.danger:hover{background:var(--accent-red-dk)}
+.btn.blue{background:var(--accent-blue)}
+.btn.blue:hover{background:var(--accent-blue-dk)}
+.btn.gold{background:var(--accent-yellow);color:var(--text-dark)}
+.btn.gold:hover{background:var(--accent-yellow-dk)}
+
+.btn-row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.btn-row .btn{margin:0;flex:1}
+
+/* Info box */
+.info-box{
+  background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;
+  font-size:12px;line-height:1.6;margin:8px 0;max-height:200px;overflow-y:auto;
+  white-space:pre-wrap;word-break:break-all;
+}
+.info-box .hl{font-weight:700;color:var(--accent-blue)}
+
+/* Preset cards */
+.preset-card{
+  background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;
+  margin-bottom:10px;cursor:pointer;transition:0.2s;
+}
+.preset-card:hover{border-color:var(--accent-blue);box-shadow:0 2px 8px var(--shadow)}
+.preset-card .pc-title{font-size:13px;font-weight:700;color:var(--text-dark);margin-bottom:4px}
+.preset-card .pc-desc{font-size:12px;color:var(--text-muted)}
+
+/* Matrix table */
+.mat-table{font-size:11px;border-collapse:collapse;width:100%;margin:8px 0}
+.mat-table th,.mat-table td{border:1px solid var(--border);padding:4px;text-align:center}
+.mat-table th{background:var(--bg);font-weight:600}
+.mat-table td{background:var(--bg2)}
+
+/* ═══════════════════ ANIMATION BAR ═══════════════════ */
+#anim-bar{
+  display:none;flex-shrink:0;
+  background:var(--bg2);border:1px solid var(--border);border-radius:8px;
+  padding:12px 20px;z-index:45;margin:0 12px 12px 12px;
+}
+#anim-bar.show{display:block}
+.anim-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.anim-btn{
+  width:36px;height:36px;font-size:16px;
+  background:var(--bg);color:var(--text-dark);border:1px solid var(--border);border-radius:6px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:0.2s;
+}
+.anim-btn:hover{background:var(--border-lt)}
+.anim-btn.active{background:var(--accent-green);color:#fff;border-color:var(--accent-green)}
+#anim-slider{flex:1;min-width:100px;accent-color:var(--accent-blue);cursor:pointer}
+#anim-step-label{font-size:12px;font-weight:600;color:var(--text-muted);min-width:60px;text-align:center}
+.speed-btns{display:flex;gap:4px}
+.speed-btn{
+  padding:6px 10px;font-family:var(--base-font);font-size:12px;font-weight:600;
+  background:var(--bg);color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;
+}
+.speed-btn:hover{background:var(--border-lt)}
+.speed-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+#anim-desc{
+  font-size:13px;color:var(--text-dark);margin-top:12px;padding:8px 12px;
+  background:var(--bg);border-radius:6px;min-height:36px;
+}
+
+/* ═══════════════════ MODAL ═══════════════════ */
+.modal-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);
+  z-index:200;align-items:center;justify-content:center;
+}
+.modal-overlay.show{display:flex}
+.modal{
+  background:var(--bg2);border-radius:10px;box-shadow:0 10px 25px rgba(0,0,0,0.2);
+  padding:24px;min-width:320px;max-width:90vw;max-height:80vh;
+  overflow-y:auto;
+}
+.modal h3{font-size:18px;font-weight:700;color:var(--text-dark);margin-bottom:16px;text-align:center}
+.modal .field{margin-bottom:16px}
+.modal-btns{display:flex;gap:12px;justify-content:center;margin-top:20px}
+.modal-btns .btn{margin:0;min-width:100px}
+
+/* ═══════════════════ CONTEXT MENU ═══════════════════ */
+#ctx-menu, #ctx-menu-edge{
+  display:none;position:fixed;z-index:150;
+  background:var(--bg2);border:1px solid var(--border);border-radius:6px;
+  box-shadow:0 4px 12px var(--shadow);min-width:160px;padding:4px 0;
+}
+#ctx-menu.show, #ctx-menu-edge.show{display:block}
+.ctx-item{
+  padding:8px 16px;font-family:var(--base-font);font-size:13px;
+  color:var(--text-dark);cursor:pointer;transition:0.1s;
+}
+.ctx-item:hover{background:var(--bg);color:var(--accent-blue)}
+.ctx-sep{height:1px;background:var(--border);margin:4px 0}
+
+/* ═══════════════════ TOAST ═══════════════════ */
+#toast-container{position:fixed;top:70px;right:20px;z-index:300;display:flex;flex-direction:column;gap:10px}
+.toast{
+  padding:12px 20px;font-family:var(--base-font);font-size:13px;font-weight:600;border-radius:8px;
+  background:var(--bg2);color:var(--text-dark);border:1px solid var(--border);
+  box-shadow:0 4px 12px var(--shadow);animation:toastIn .3s;max-width:300px;
+}
+.toast.error{background:#FEE2E2;border-color:#FCA5A5;color:#991B1B}
+.toast.success{background:#D1FAE5;border-color:#6EE7B7;color:#065F46}
+@keyframes toastIn{from{opacity:0;transform:translateX(40px)} to{opacity:1;transform:none}}
+
+/* ═══════════════════ RESPONSIVE ═══════════════════ */
+@media(max-width:768px){
+  :root{--panel-w:100%}
+  #header{flex-wrap:wrap;gap:8px;padding:12px}
+  #header .logo{font-size:16px}
+  #main{flex-direction:column;padding:0}
+  #canvas-wrap{border-radius:0}
+  #sidebar{
+    position:fixed;bottom:0;left:0;right:0;
+    height:50vh;width:100%;border-radius:16px 16px 0 0;
+    transform:translateY(100%);transition:transform .3s;
+  }
+  #sidebar.open{transform:translateY(0)}
+  #sidebar-toggle{display:block}
+  #anim-bar{margin:0;border-radius:0;border-top:1px solid var(--border)}
+}
+
+/* ═══════════════════ DECORATIVE ═══════════════════ */
+.divider{height:1px;background:var(--border);margin:16px 0}
+</style>
+</head>
+<body>
+<!-- ═══════════════════ HEADER ═══════════════════ -->
+<div id="app">
+<div id="header">
+  <div class="logo">Graph Lab</div>
+  <div class="hdr-sep"></div>
+  <div class="toggle-group">
+    <span>Undirected</span>
+    <label class="toggle"><input type="checkbox" id="directedToggle"><span class="slider"></span></label>
+    <span>Directed</span>
+  </div>
+  <div class="hdr-sep"></div>
+  <button class="hdr-btn" onclick="undoAction()" title="Undo">↩ Undo</button>
+  <button class="hdr-btn" onclick="fitView()" title="Fit">⊞ Fit</button>
+  <button class="hdr-btn gold" onclick="exportPNG()" title="Export PNG">📷 PNG</button>
+  <button class="hdr-btn" onclick="saveState()" title="Save">💾 Save</button>
+  <button class="hdr-btn blue" onclick="loadState()" title="Load">📂 Load</button>
+  <button class="hdr-btn danger" onclick="clearGraph()" title="Clear">🗑 Clear</button>
+</div>
+
+<!-- ═══════════════════ MAIN ═══════════════════ -->
+<div id="main">
+  <div id="canvas-wrap">
+    <canvas id="graph-canvas"></canvas>
+    <div id="coords"></div>
+  </div>
+  <button id="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+
+  <!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+  <div id="sidebar">
+    <div id="sidebar-tabs">
+      <button class="tab-btn active" data-tab="tools">🔧 Tools</button>
+      <button class="tab-btn" data-tab="algo">⚡ Algo</button>
+      <button class="tab-btn" data-tab="analysis">📊 Info</button>
+      <button class="tab-btn" data-tab="presets">📦 Preset</button>
+    </div>
+    <div id="sidebar-content">
+
+      <!-- ── TOOLS PANEL ── -->
+      <div class="panel active" id="panel-tools">
+        <h3>Graph Tools</h3>
+        <h4>Mode</h4>
+        <div class="btn-row">
+          <button class="btn sm active" data-mode="vertex" onclick="setMode('vertex')">+ Vertex</button>
+          <button class="btn sm" data-mode="edge" onclick="setMode('edge')">+ Edge</button>
+          <button class="btn sm" data-mode="move" onclick="setMode('move')">✋ Move</button>
+          <button class="btn sm" data-mode="select" onclick="setMode('select')">🎯 Select</button>
+        </div>
+        <div class="divider"></div>
+
+        <h4>Selected Vertex</h4>
+        <div id="sel-vertex-info" class="info-box">
+          <em style="color:var(--text-muted)">Click a vertex to select</em>
+        </div>
+        <div class="field">
+          <label>Name</label>
+          <input id="vNameInput" placeholder="e.g. Warehouse A" disabled>
+        </div>
+        <div class="btn-row">
+          <button class="btn sm danger" id="btnDelVertex" onclick="deleteSelectedVertex()" disabled>Delete Vertex</button>
+        </div>
+        <div class="divider"></div>
+
+        <h4>Selected Edge</h4>
+        <div id="sel-edge-info" class="info-box">
+          <em style="color:var(--text-muted)">Click an edge to select</em>
+        </div>
+        <div class="field">
+          <label>Weight</label>
+          <input id="eWeightInput" type="number" min="0" step="0.1" placeholder="1" disabled>
+        </div>
+        <div class="field">
+          <label>Curve</label>
+          <input id="eCurveInput" type="range" min="-100" max="100" value="0" disabled>
+        </div>
+        <div class="btn-row">
+          <button class="btn sm" style="background:var(--primary)" id="btnResetCurve" onclick="resetCurve()" disabled>Reset Curve</button>
+          <button class="btn sm danger" id="btnDelEdge" onclick="deleteSelectedEdge()" disabled>Delete Edge</button>
+        </div>
+      </div>
+
+      <!-- ── ALGORITHM PANEL ── -->
+      <div class="panel" id="panel-algo">
+        <h3>Algorithms</h3>
+
+        <h4>🛤 Dijkstra — Shortest Path</h4>
+        <div class="field"><label>Source</label><select id="dijSrc"></select></div>
+        <div class="field"><label>Target (optional)</label><select id="dijDst"><option value="">— All —</option></select></div>
+        <button class="btn gold" style="width:100%" onclick="runDijkstra()">▶ Run Dijkstra</button>
+        <div class="divider"></div>
+
+        <h4>🌲 Prim — MST</h4>
+        <div class="field"><label>Start vertex</label><select id="primStart"></select></div>
+        <button class="btn gold" style="width:100%" onclick="runPrim()">▶ Run Prim</button>
+        <div class="divider"></div>
+
+        <h4>🎨 Graph Coloring — Welsh–Powell</h4>
+        <button class="btn gold" style="width:100%" onclick="runColoring()">▶ Run Coloring</button>
+        <div class="divider"></div>
+
+        <h4>🌊 Network Flow — Edmonds–Karp</h4>
+        <div class="field"><label>Source</label><select id="flowSrc"></select></div>
+        <div class="field"><label>Sink</label><select id="flowSnk"></select></div>
+        <button class="btn gold" style="width:100%" onclick="runFlow()">▶ Run Flow</button>
+        <div class="divider"></div>
+        <button class="btn sm danger" style="width:100%" onclick="stopAlgo()">⏹ Stop / Clear Highlight</button>
+      </div>
+
+      <!-- ── ANALYSIS PANEL ── -->
+      <div class="panel" id="panel-analysis">
+        <h3>Graph Analysis</h3>
+        <button class="btn" style="width:100%; background:var(--accent-blue)" onclick="runAnalysis()">🔍 Analyze</button>
+        <div id="analysis-result" class="info-box" style="min-height:60px">
+          <em style="color:var(--text-muted)">Click Analyze to see info</em>
+        </div>
+        <div id="matrix-area"></div>
+      </div>
+
+      <!-- ── PRESETS PANEL ── -->
+      <div class="panel" id="panel-presets">
+        <h3>Preset Examples</h3>
+        <div class="preset-card" onclick="loadPreset('logistics')">
+          <div class="pc-title">🚚 Logistics Network (Dijkstra)</div>
+          <div class="pc-desc">Transport routes between warehouses and stores. Find shortest delivery path.</div>
+        </div>
+        <div class="preset-card" onclick="loadPreset('city')">
+          <div class="pc-title">🏘 City Infrastructure (Prim)</div>
+          <div class="pc-desc">City map for minimum-cost road/pipe network planning.</div>
+        </div>
+        <div class="preset-card" onclick="loadPreset('exam')">
+          <div class="pc-title">📅 Exam Scheduling (Coloring)</div>
+          <div class="pc-desc">Course conflict graph — color to schedule exams.</div>
+        </div>
+        <div class="preset-card" onclick="loadPreset('pipeline')">
+          <div class="pc-title">🏭 Pipeline Network (Flow)</div>
+          <div class="pc-desc">Directed capacity network — find max flow & bottlenecks.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ ANIMATION BAR ═══════════════════ -->
+<div id="anim-bar">
+  <div class="anim-controls">
+    <button class="anim-btn" onclick="animFirst()" title="First">⏮</button>
+    <button class="anim-btn" onclick="animPrev()" title="Back">◀</button>
+    <button class="anim-btn" id="anim-play-btn" onclick="animTogglePlay()" title="Play/Pause">▶</button>
+    <button class="anim-btn" onclick="animNext()" title="Next">▶|</button>
+    <button class="anim-btn" onclick="animLast()" title="Last">⏭</button>
+    <input type="range" id="anim-slider" min="0" max="0" value="0" oninput="animSeek(this.value)">
+    <span id="anim-step-label">0/0</span>
+    <div class="speed-btns">
+      <button class="speed-btn" data-speed="0.5">0.5×</button>
+      <button class="speed-btn active" data-speed="1">1×</button>
+      <button class="speed-btn" data-speed="2">2×</button>
+      <button class="speed-btn" data-speed="4">4×</button>
+    </div>
+  </div>
+  <div id="anim-desc"></div>
+</div>
+</div>
+
+<!-- ═══════════════════ CONTEXT MENU ═══════════════════ -->
+<div id="ctx-menu">
+  <div class="ctx-item" data-action="editName">✏️ Rename Vertex</div>
+  <div class="ctx-item" data-action="setSource">🟢 Set as Source</div>
+  <div class="ctx-item" data-action="setSink">🔴 Set as Sink</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" style="color:var(--accent-red)" data-action="deleteVertex">🗑 Delete Vertex</div>
+</div>
+
+<!-- ═══════════════════ EDGE CONTEXT MENU ═══════════════════ -->
+<div id="ctx-menu-edge">
+  <div class="ctx-item" data-action="editWeight">✏️ Edit Weight</div>
+  <div class="ctx-item" data-action="resetCurve">↩️ Reset Curve</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" style="color:var(--accent-red)" data-action="deleteEdge">🗑 Delete Edge</div>
+</div>
+
+<!-- ═══════════════════ MODAL ═══════════════════ -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<!-- ═══════════════════ TOAST ═══════════════════ -->
+<div id="toast-container"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   GRAPH THEORY LAB — FRONTEND ENGINE
+   ═══════════════════════════════════════════════════════════ */
+
+// ─── STATE ───
+let vertices = [];   // {id,x,y,name,color}
+let edges = [];      // {id,from,to,weight,curve}
+let directed = false;
+let nextVId = 1;
+let nextEId = 1;
+
+let mode = 'vertex'; // vertex | edge | move | select
+let selectedVertex = null;
+let selectedEdge = null;
+let edgeSrcVertex = null; // for edge creation
+
+// Undo
+const undoStack = [];
+const MAX_UNDO = 15;
+
+// Camera
+let camX = 0, camY = 0, camZoom = 1;
+
+// Drag
+let isDragging = false;
+let dragTarget = null;  // vertex being dragged
+let dragStartX = 0, dragStartY = 0;
+let panStartX = 0, panStartY = 0;
+let isPanning = false;
+
+// Touch
+let lastTouchDist = 0;
+let touches = [];
+
+// Canvas
+const canvas = document.getElementById('graph-canvas');
+const ctx = canvas.getContext('2d');
+let W = 0, H = 0;
+let dpr = window.devicePixelRatio || 1;
+
+// Animation
+let algoSteps = [];
+let algoStep = 0;
+let algoPlaying = false;
+let algoTimer = null;
+let algoSpeed = 1;
+let algoType = '';
+let algoFlowData = {};
+
+// Rendering constants
+const VERTEX_RADIUS = 20;
+const EDGE_WIDTH = 3;
+const ARROW_SIZE = 14;
+
+// Color palette for graph coloring
+const COLORING_PALETTE = [
+  '#E74C3C','#3498DB','#2ECC71','#F1C40F','#9B59B6','#E67E22',
+  '#1ABC9C','#E91E63','#8BC34A','#00BCD4','#3F51B5','#795548',
+  '#9C27B0','#FFEB3B','#607D8B'
+];
+
+// UI Colors
+const UI = {
+  canvasBg: '#1B4D3E',
+  vertexDefault: '#FFFFFF',
+  vertexBorder: '#333333',
+  edgeColor: '#BDC3C7',
+  edgeHl: '#F2C94C',
+  visitedColor: '#2ECC71',
+  currentColor: '#E74C3C',
+  pathColor: '#FF6347',
+  consideringColor: '#F39C12',
+  textDark: '#333333',
+  textLight: '#FFFFFF',
+  gold: '#F2C94C'
+};
+
+// ─── INIT ───
+function init() {
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  // Tab switching
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // Directed toggle
+  document.getElementById('directedToggle').addEventListener('change', e => {
+    pushUndo();
+    directed = e.target.checked;
+    render();
+  });
+
+  // Vertex name input
+  document.getElementById('vNameInput').addEventListener('input', e => {
+    if (selectedVertex) {
+      const v = vertices.find(v => v.id === selectedVertex);
+      if (v) { v.name = e.target.value; render(); }
+    }
+  });
+
+  // Edge weight input
+  document.getElementById('eWeightInput').addEventListener('change', e => {
+    if (selectedEdge) {
+      const ed = edges.find(ed => ed.id === selectedEdge);
+      if (ed) {
+        const val = parseFloat(e.target.value);
+        if (!isNaN(val) && val >= 0) { pushUndo(); ed.weight = val; render(); }
+      }
+    }
+  });
+
+  // Edge curve input
+  document.getElementById('eCurveInput').addEventListener('input', e => {
+    if (selectedEdge) {
+      const ed = edges.find(ed => ed.id === selectedEdge);
+      if (ed) { ed.curve = parseInt(e.target.value); render(); }
+    }
+  });
+
+  // Speed buttons
+  document.querySelectorAll('.speed-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      algoSpeed = parseFloat(btn.dataset.speed);
+    });
+  });
+
+  // Canvas events
+  canvas.addEventListener('pointerdown', onPointerDown);
+  canvas.addEventListener('pointermove', onPointerMove);
+  canvas.addEventListener('pointerup', onPointerUp);
+  canvas.addEventListener('pointercancel', onPointerUp);
+  canvas.addEventListener('wheel', onWheel, { passive: false });
+  canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+  // Touch for pinch zoom
+  canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+  canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+  canvas.addEventListener('touchend', onTouchEnd, { passive: false });
+
+  // Context menus
+  document.addEventListener('click', () => {
+    document.getElementById('ctx-menu').classList.remove('show');
+    document.getElementById('ctx-menu-edge').classList.remove('show');
+  });
+
+  document.querySelectorAll('#ctx-menu .ctx-item').forEach(item => {
+    item.addEventListener('click', () => handleCtxAction(item.dataset.action));
+  });
+  document.querySelectorAll('#ctx-menu-edge .ctx-item').forEach(item => {
+    item.addEventListener('click', () => handleEdgeCtxAction(item.dataset.action));
+  });
+
+  // Modal close
+  document.getElementById('modal-overlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+
+  // Auto-load
+  autoLoadState();
+
+  render();
+}
+
+// ─── CANVAS RESIZE ───
+function resizeCanvas() {
+  const wrap = document.getElementById('canvas-wrap');
+  W = wrap.clientWidth;
+  H = wrap.clientHeight;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  render();
+}
+
+// ─── COORDINATE TRANSFORMS ───
+function screenToWorld(sx, sy) {
+  return { x: (sx - W/2) / camZoom + camX, y: (sy - H/2) / camZoom + camY };
+}
+function worldToScreen(wx, wy) {
+  return { x: (wx - camX) * camZoom + W/2, y: (wy - camY) * camZoom + H/2 };
+}
+
+// ─── RENDER ───
+function render() {
+  ctx.save();
+  ctx.clearRect(0, 0, W, H);
+
+  // Background
+  drawBackground();
+
+  // Transform to world
+  ctx.save();
+  ctx.translate(W/2, H/2);
+  ctx.scale(camZoom, camZoom);
+  ctx.translate(-camX, -camY);
+
+  // Draw edges
+  edges.forEach(e => drawEdge(e));
+
+  // Draw temp edge (during edge creation)
+  if (edgeSrcVertex && mode === 'edge') {
+    const sv = vertices.find(v => v.id === edgeSrcVertex);
+    if (sv && tempEdgeEnd) {
+      ctx.save();
+      ctx.setLineDash([6, 4]);
+      ctx.strokeStyle = UI.gold;
+      ctx.lineWidth = 3 / camZoom;
+      ctx.beginPath();
+      ctx.moveTo(sv.x, sv.y);
+      ctx.lineTo(tempEdgeEnd.x, tempEdgeEnd.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  // Draw vertices
+  vertices.forEach(v => drawVertex(v));
+
+  ctx.restore();
+
+  // HUD
+  const coordsEl = document.getElementById('coords');
+  coordsEl.textContent = `V:${vertices.length} E:${edges.length} Zoom:${(camZoom*100).toFixed(0)}%`;
+
+  ctx.restore();
+}
+
+let tempEdgeEnd = null;
+
+function drawBackground() {
+  ctx.fillStyle = UI.canvasBg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid dots
+  const gridSize = 40;
+  const startX = -(camX % gridSize) * camZoom + (W/2 % (gridSize * camZoom));
+  const startY = -(camY % gridSize) * camZoom + (H/2 % (gridSize * camZoom));
+  const step = gridSize * camZoom;
+
+  if (step > 8) {
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    for (let x = startX % step - step; x < W + step; x += step) {
+      for (let y = startY % step - step; y < H + step; y += step) {
+        ctx.fillRect(Math.round(x), Math.round(y), 2, 2);
+      }
+    }
+  }
+}
+
+function drawVertex(v) {
+  const isSelected = (v.id === selectedVertex);
+  const r = VERTEX_RADIUS;
+  const x = Math.round(v.x);
+  const y = Math.round(v.y);
+
+  // Check algorithm highlights
+  const stepData = getCurrentStepData();
+  let hlType = '';
+  if (stepData) {
+    if (stepData.path && stepData.path.includes(v.id)) hlType = 'path';
+    else if (stepData.current === v.id) hlType = 'current';
+    else if (stepData.considering === v.id) hlType = 'considering';
+    else if (stepData.hlVerts && stepData.hlVerts.includes(v.id)) hlType = 'highlight';
+    else if (stepData.visited && stepData.visited.includes(v.id)) hlType = 'visited';
+  }
+
+  // Determine color
+  let fillColor = v.color || UI.vertexDefault;
+  let isColored = false;
+  if (stepData && stepData.colors && v.id in stepData.colors) {
+    const ci = stepData.colors[v.id];
+    fillColor = COLORING_PALETTE[ci % COLORING_PALETTE.length];
+    isColored = true;
+  }
+
+  if (hlType === 'current') fillColor = UI.currentColor;
+  else if (hlType === 'considering') fillColor = UI.consideringColor;
+  else if (hlType === 'path') fillColor = UI.pathColor;
+  else if (hlType === 'visited' && !isColored) fillColor = UI.visitedColor;
+  else if (hlType === 'highlight' && !isColored) fillColor = UI.gold;
+
+  // Glow for selected
+  if (isSelected) {
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetY = 4;
+  }
+
+  // Draw Circle
+  ctx.fillStyle = fillColor;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.shadowBlur = 0;
+  ctx.shadowColor = 'transparent';
+  ctx.shadowOffsetY = 0;
+
+  // Border
+  ctx.strokeStyle = isSelected ? UI.gold : UI.vertexBorder;
+  ctx.lineWidth = isSelected ? 4 : 2;
+  ctx.stroke();
+
+  // Draw ID inside circle
+  ctx.font = 'bold 12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = UI.textDark;
+  
+  // If dark fill color, make text light
+  const isDark = hlType === 'current' || hlType === 'path' || hlType === 'visited' || 
+                 (fillColor !== UI.vertexDefault && fillColor !== UI.gold);
+  if (isDark) ctx.fillStyle = UI.textLight;
+  ctx.fillText(v.id, x, y);
+
+  // Name label below
+  const label = v.name;
+  if (label) {
+    const fontSize = Math.max(10, Math.min(14, 14 / camZoom));
+    ctx.font = `bold ${fontSize}px Inter, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+
+    const tw = ctx.measureText(label).width;
+    ctx.fillStyle = 'rgba(27, 43, 60, 0.85)';
+    ctx.beginPath();
+    ctx.roundRect(x - tw/2 - 6, y + r + 6, tw + 12, fontSize + 8, 4);
+    ctx.fill();
+    
+    ctx.fillStyle = UI.textLight;
+    ctx.fillText(label, x, y + r + 10);
+  }
+
+  // Distance label (Dijkstra)
+  if (stepData && stepData.distances && v.id in stepData.distances) {
+    const d = stepData.distances[v.id];
+    const dLabel = d === null ? '∞' : (typeof d === 'number' ? (d === Math.floor(d) ? d.toString() : d.toFixed(1)) : d);
+    ctx.font = `bold ${Math.max(10, 12)}px Inter, sans-serif`;
+    const dtw = ctx.measureText('d=' + dLabel).width;
+    ctx.fillStyle = 'rgba(0,0,0,0.8)';
+    ctx.beginPath();
+    ctx.roundRect(x - dtw/2 - 4, y - r - 24, dtw + 8, 16, 4);
+    ctx.fill();
+    ctx.fillStyle = UI.gold;
+    ctx.fillText('d=' + dLabel, x, y - r - 22);
+  }
+}
+
+function drawEdge(e) {
+  const fromV = vertices.find(v => v.id === e.from);
+  const toV = vertices.find(v => v.id === e.to);
+  if (!fromV || !toV) return;
+
+  const stepData = getCurrentStepData();
+  let isPath = false;
+  let isHL = false;
+  let isMST = false;
+  let isMinCut = false;
+
+  if (stepData) {
+    if (stepData.pathEdges && stepData.pathEdges.includes(e.id)) isPath = true;
+    if (stepData.hlEdges && stepData.hlEdges.includes(e.id)) isHL = true;
+    if (stepData.mstEdges && stepData.mstEdges.includes(e.id)) isMST = true;
+    if (stepData.minCutEdges && stepData.minCutEdges.includes(e.id)) isMinCut = true;
+  }
+
+  const isSelectedEdge = (e.id === selectedEdge);
+
+  // Compute curve
+  const cx = (fromV.x + toV.x) / 2;
+  const cy = (fromV.y + toV.y) / 2;
+  const dx = toV.x - fromV.x;
+  const dy = toV.y - fromV.y;
+  const len = Math.sqrt(dx*dx + dy*dy) || 1;
+  const nx = -dy / len;
+  const ny = dx / len;
+  const curveAmt = (e.curve || 0) * 0.5;
+  const cpx = cx + nx * curveAmt;
+  const cpy = cy + ny * curveAmt;
+
+  // Edge color
+  let color = UI.edgeColor;
+  let width = EDGE_WIDTH;
+
+  if (isPath) { color = UI.pathColor; width = 5; }
+  else if (isMinCut) { color = UI.currentColor; width = 5; }
+  else if (isHL) { color = UI.gold; width = 4; }
+  else if (isMST) { color = UI.visitedColor; width = 4; }
+  else if (isSelectedEdge) { color = UI.gold; width = 4; }
+
+  // Draw line
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.beginPath();
+  if (curveAmt !== 0) {
+    ctx.moveTo(fromV.x, fromV.y);
+    ctx.quadraticCurveTo(cpx, cpy, toV.x, toV.y);
+  } else {
+    ctx.moveTo(fromV.x, fromV.y);
+    ctx.lineTo(toV.x, toV.y);
+  }
+  ctx.stroke();
+
+  // Arrow for directed
+  if (directed) {
+    // Arrow pointing to edge of node, not center
+    const t = 0.5; // Place arrow at middle for better visibility on curves
+    let ax, ay, anx, any;
+    
+    if (curveAmt !== 0) {
+      // Derivative of quadratic bezier for tangent
+      const dx_t = 2*(1-t)*(cpx - fromV.x) + 2*t*(toV.x - cpx);
+      const dy_t = 2*(1-t)*(cpy - fromV.y) + 2*t*(toV.y - cpy);
+      const tlen = Math.sqrt(dx_t*dx_t + dy_t*dy_t);
+      anx = dx_t / tlen;
+      any = dy_t / tlen;
+      ax = (1-t)*(1-t)*fromV.x + 2*(1-t)*t*cpx + t*t*toV.x;
+      ay = (1-t)*(1-t)*fromV.y + 2*(1-t)*t*cpy + t*t*toV.y;
+    } else {
+      ax = fromV.x + (toV.x - fromV.x) * t;
+      ay = fromV.y + (toV.y - fromV.y) * t;
+      anx = dx / len;
+      any = dy / len;
+    }
+
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(ax + anx * (ARROW_SIZE/2), ay + any * (ARROW_SIZE/2));
+    ctx.lineTo(ax - anx * (ARROW_SIZE/2) - any * (ARROW_SIZE/2.5), ay - any * (ARROW_SIZE/2) + anx * (ARROW_SIZE/2.5));
+    ctx.lineTo(ax - anx * (ARROW_SIZE/2) + any * (ARROW_SIZE/2.5), ay - any * (ARROW_SIZE/2) - anx * (ARROW_SIZE/2.5));
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Weight / Flow label
+  let labelText = '';
+  if (stepData && stepData.flow && e.id in stepData.flow) {
+    const fi = stepData.flow[e.id];
+    labelText = `${fi.flow}/${fi.capacity}`;
+  } else {
+    labelText = e.weight !== 1 ? String(e.weight) : String(e.weight);
+  }
+
+  const lx = curveAmt !== 0 ? cpx : cx;
+  const ly = curveAmt !== 0 ? cpy : cy;
+
+  const fontSize = Math.max(10, 12);
+  ctx.font = `bold ${fontSize}px Inter, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const ltw = ctx.measureText(labelText).width;
+
+  ctx.fillStyle = 'rgba(26, 43, 60, 0.9)';
+  ctx.beginPath();
+  ctx.roundRect(lx - ltw/2 - 6, ly - fontSize/2 - 6, ltw + 12, fontSize + 12, 6);
+  ctx.fill();
+
+  ctx.fillStyle = isPath || isHL || isMinCut ? '#FFFFFF' : '#E0E0E0';
+  ctx.fillText(labelText, lx, ly);
+
+  // Min cut marker
+  if (isMinCut) {
+    ctx.strokeStyle = UI.currentColor;
+    ctx.lineWidth = 3;
+    const mcx = (fromV.x + toV.x) / 2 + nx * curveAmt * 0.5;
+    const mcy = (fromV.y + toV.y) / 2 + ny * curveAmt * 0.5;
+    ctx.beginPath();
+    ctx.moveTo(mcx - 12 * nx - 12 * (dx/len), mcy - 12 * ny - 12 * (dy/len));
+    ctx.lineTo(mcx + 12 * nx + 12 * (dx/len), mcy + 12 * ny + 12 * (dy/len));
+    ctx.stroke();
+  }
+}
+
+// ─── HIT TESTING ───
+function hitVertex(wx, wy) {
+  const s = VERTEX_RADIUS * 2 + 10;
+  for (let i = vertices.length - 1; i >= 0; i--) {
+    const v = vertices[i];
+    if (Math.abs(wx - v.x) < s/2 && Math.abs(wy - v.y) < s/2) return v;
+  }
+  return null;
+}
+
+function hitEdge(wx, wy) {
+  let best = null, bestDist = 12;
+  edges.forEach(e => {
+    const fv = vertices.find(v => v.id === e.from);
+    const tv = vertices.find(v => v.id === e.to);
+    if (!fv || !tv) return;
+
+    const d = pointToSegDist(wx, wy, fv.x, fv.y, tv.x, tv.y, e.curve || 0);
+    if (d < bestDist) { bestDist = d; best = e; }
+  });
+  return best;
+}
+
+function pointToSegDist(px, py, x1, y1, x2, y2, curve) {
+  if (Math.abs(curve) > 1) {
+    const dx = x2 - x1, dy = y2 - y1;
+    const len = Math.sqrt(dx*dx + dy*dy) || 1;
+    const nx = -dy/len, ny = dx/len;
+    const mx = (x1+x2)/2, my = (y1+y2)/2;
+    const cpx = mx + nx * curve * 0.5;
+    const cpy = my + ny * curve * 0.5;
+
+    let minD = Infinity;
+    for (let t = 0; t <= 1; t += 0.05) {
+      const bx = (1-t)*(1-t)*x1 + 2*(1-t)*t*cpx + t*t*x2;
+      const by = (1-t)*(1-t)*y1 + 2*(1-t)*t*cpy + t*t*y2;
+      const dd = Math.sqrt((px-bx)**2 + (py-by)**2);
+      if (dd < minD) minD = dd;
+    }
+    return minD;
+  }
+
+  const dx = x2 - x1, dy = y2 - y1;
+  const lenSq = dx*dx + dy*dy;
+  if (lenSq === 0) return Math.sqrt((px-x1)**2 + (py-y1)**2);
+  let t = ((px-x1)*dx + (py-y1)*dy) / lenSq;
+  t = Math.max(0, Math.min(1, t));
+  const nx = x1 + t * dx, ny2 = y1 + t * dy;
+  return Math.sqrt((px-nx)**2 + (py-ny2)**2);
+}
+
+// ─── INPUT HANDLERS ───
+let pointerDownTime = 0;
+let pointerDownPos = null;
+let ctxMenuVid = null;
+let ctxMenuEid = null;
+
+function onPointerDown(e) {
+  if (e.button === 2) { 
+    e.preventDefault();
+    const w = screenToWorld(e.offsetX, e.offsetY);
+    const hv = hitVertex(w.x, w.y);
+    const he = hitEdge(w.x, w.y);
+
+    if (hv) {
+      ctxMenuVid = hv.id;
+      showCtxMenu('ctx-menu', e.clientX, e.clientY);
+    } else if (he) {
+      ctxMenuEid = he.id;
+      showCtxMenu('ctx-menu-edge', e.clientX, e.clientY);
+    }
+    return;
+  }
+
+  pointerDownTime = Date.now();
+  pointerDownPos = { x: e.offsetX, y: e.offsetY };
+
+  const w = screenToWorld(e.offsetX, e.offsetY);
+  const hv = hitVertex(w.x, w.y);
+
+  if (mode === 'move' || (mode === 'select' && hv)) {
+    if (hv) {
+      dragTarget = hv;
+      isDragging = true;
+      dragStartX = hv.x;
+      dragStartY = hv.y;
+    } else {
+      isPanning = true;
+      panStartX = e.offsetX;
+      panStartY = e.offsetY;
+    }
+    canvas.setPointerCapture(e.pointerId);
+  } else if (mode === 'edge') {
+    if (hv) {
+      if (!edgeSrcVertex) {
+        edgeSrcVertex = hv.id;
+        selectedVertex = hv.id;
+        updateVertexUI();
+        render();
+      } else if (hv.id !== edgeSrcVertex) {
+        pushUndo();
+        const eid = 'e' + (nextEId++);
+        edges.push({ id: eid, from: edgeSrcVertex, to: hv.id, weight: 1, curve: 0 });
+        edgeSrcVertex = null;
+        tempEdgeEnd = null;
+        selectedEdge = eid;
+        updateEdgeUI();
+        render();
+      }
+    } else {
+      edgeSrcVertex = null;
+      tempEdgeEnd = null;
+      render();
+    }
+  } else if (mode === 'vertex') {
+    if (!hv) {
+      pushUndo();
+      const vid = 'v' + (nextVId++);
+      vertices.push({ id: vid, x: w.x, y: w.y, name: '', color: null });
+      selectedVertex = vid;
+      selectedEdge = null;
+      updateVertexUI();
+      updateAlgoSelects();
+      render();
+    } else {
+      selectedVertex = hv.id;
+      selectedEdge = null;
+      updateVertexUI();
+      render();
+      dragTarget = hv;
+      isDragging = true;
+      dragStartX = hv.x;
+      dragStartY = hv.y;
+      canvas.setPointerCapture(e.pointerId);
+    }
+  } else if (mode === 'select') {
+    const he = hitEdge(w.x, w.y);
+    if (he) {
+      selectedEdge = he.id;
+      selectedVertex = null;
+      updateEdgeUI();
+      updateVertexUI();
+      render();
+    } else {
+      selectedVertex = null;
+      selectedEdge = null;
+      updateVertexUI();
+      updateEdgeUI();
+      isPanning = true;
+      panStartX = e.offsetX;
+      panStartY = e.offsetY;
+      canvas.setPointerCapture(e.pointerId);
+      render();
+    }
+  }
+}
+
+function onPointerMove(e) {
+  if (isDragging && dragTarget) {
+    const w = screenToWorld(e.offsetX, e.offsetY);
+    dragTarget.x = w.x;
+    dragTarget.y = w.y;
+    render();
+  } else if (isPanning) {
+    const dx = (e.offsetX - panStartX) / camZoom;
+    const dy = (e.offsetY - panStartY) / camZoom;
+    camX -= dx;
+    camY -= dy;
+    panStartX = e.offsetX;
+    panStartY = e.offsetY;
+    render();
+  } else if (mode === 'edge' && edgeSrcVertex) {
+    tempEdgeEnd = screenToWorld(e.offsetX, e.offsetY);
+    render();
+  }
+}
+
+function onPointerUp(e) {
+  isDragging = false;
+  dragTarget = null;
+  isPanning = false;
+}
+
+function onWheel(e) {
+  e.preventDefault();
+  const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+  const newZoom = Math.max(0.1, Math.min(5, camZoom * zoomFactor));
+
+  const wx = (e.offsetX - W/2) / camZoom + camX;
+  const wy = (e.offsetY - H/2) / camZoom + camY;
+  camZoom = newZoom;
+  camX = wx - (e.offsetX - W/2) / camZoom;
+  camY = wy - (e.offsetY - H/2) / camZoom;
+
+  render();
+}
+
+function onTouchStart(e) {
+  if (e.touches.length === 2) {
+    e.preventDefault();
+    lastTouchDist = getTouchDist(e.touches);
+  }
+}
+function onTouchMove(e) {
+  if (e.touches.length === 2) {
+    e.preventDefault();
+    const d = getTouchDist(e.touches);
+    if (lastTouchDist > 0) {
+      const factor = d / lastTouchDist;
+      camZoom = Math.max(0.1, Math.min(5, camZoom * factor));
+      render();
+    }
+    lastTouchDist = d;
+  }
+}
+function onTouchEnd(e) {
+  lastTouchDist = 0;
+}
+function getTouchDist(touches) {
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.sqrt(dx*dx + dy*dy);
+}
+
+// ─── CONTEXT MENUS ───
+function showCtxMenu(menuId, x, y) {
+  const menu = document.getElementById(menuId);
+  menu.style.left = x + 'px';
+  menu.style.top = y + 'px';
+  menu.classList.add('show');
+}
+
+function handleCtxAction(action) {
+  if (!ctxMenuVid) return;
+  switch(action) {
+    case 'editName': promptVertexName(ctxMenuVid); break;
+    case 'setSource': setSpecialVertex('source', ctxMenuVid); break;
+    case 'setSink': setSpecialVertex('sink', ctxMenuVid); break;
+    case 'deleteVertex': pushUndo(); deleteVertex(ctxMenuVid); break;
+  }
+}
+
+function handleEdgeCtxAction(action) {
+  if (!ctxMenuEid) return;
+  switch(action) {
+    case 'editWeight': promptEdgeWeight(ctxMenuEid); break;
+    case 'resetCurve':
+      const ed = edges.find(e => e.id === ctxMenuEid);
+      if (ed) { ed.curve = 0; render(); }
+      break;
+    case 'deleteEdge': pushUndo(); edges = edges.filter(e => e.id !== ctxMenuEid); render(); break;
+  }
+}
+
+function setSpecialVertex(type, vid) {
+  if (type === 'source') {
+    ['dijSrc','flowSrc','primStart'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = vid;
+    });
+  } else {
+    ['dijDst','flowSnk'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = vid;
+    });
+  }
+  toast(`${type === 'source' ? 'Source' : 'Sink'} set to ${vid}`, 'success');
+}
+
+// ─── MODE SWITCHING ───
+function setMode(m) {
+  mode = m;
+  edgeSrcVertex = null;
+  tempEdgeEnd = null;
+  document.querySelectorAll('[data-mode]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === m);
+  });
+  canvas.style.cursor =
+    m === 'vertex' ? 'crosshair' :
+    m === 'edge' ? 'pointer' :
+    m === 'move' ? 'grab' : 'default';
+  render();
+}
+
+// ─── VERTEX / EDGE UI ───
+function updateVertexUI() {
+  const info = document.getElementById('sel-vertex-info');
+  const nameIn = document.getElementById('vNameInput');
+  const delBtn = document.getElementById('btnDelVertex');
+
+  if (selectedVertex) {
+    const v = vertices.find(vv => vv.id === selectedVertex);
+    if (v) {
+      const deg = edges.filter(e => e.from === v.id || e.to === v.id).length;
+      info.innerHTML = `<span class="hl">${v.id}</span>  Name: ${v.name || '—'}  Deg: ${deg}  Pos: (${Math.round(v.x)}, ${Math.round(v.y)})`;
+      nameIn.disabled = false;
+      nameIn.value = v.name || '';
+      delBtn.disabled = false;
+    }
+  } else {
+    info.innerHTML = '<em style="color:var(--text-muted)">Click a vertex to select</em>';
+    nameIn.disabled = true;
+    nameIn.value = '';
+    delBtn.disabled = true;
+  }
+}
+
+function updateEdgeUI() {
+  const info = document.getElementById('sel-edge-info');
+  const wIn = document.getElementById('eWeightInput');
+  const cIn = document.getElementById('eCurveInput');
+  const rcBtn = document.getElementById('btnResetCurve');
+  const delBtn = document.getElementById('btnDelEdge');
+
+  if (selectedEdge) {
+    const e = edges.find(ee => ee.id === selectedEdge);
+    if (e) {
+      info.innerHTML = `<span class="hl">${e.id}</span>  ${e.from} ${directed ? '→' : '—'} ${e.to}  Weight: ${e.weight}`;
+      wIn.disabled = false;
+      wIn.value = e.weight;
+      cIn.disabled = false;
+      cIn.value = e.curve || 0;
+      rcBtn.disabled = false;
+      delBtn.disabled = false;
+    }
+  } else {
+    info.innerHTML = '<em style="color:var(--text-muted)">Click an edge to select</em>';
+    wIn.disabled = true;
+    wIn.value = '';
+    cIn.disabled = true;
+    cIn.value = 0;
+    rcBtn.disabled = true;
+    delBtn.disabled = true;
+  }
+}
+
+function deleteSelectedVertex() {
+  if (selectedVertex) { pushUndo(); deleteVertex(selectedVertex); }
+}
+function deleteSelectedEdge() {
+  if (selectedEdge) {
+    pushUndo();
+    edges = edges.filter(e => e.id !== selectedEdge);
+    selectedEdge = null;
+    updateEdgeUI();
+    updateAlgoSelects();
+    render();
+  }
+}
+function deleteVertex(vid) {
+  vertices = vertices.filter(v => v.id !== vid);
+  edges = edges.filter(e => e.from !== vid && e.to !== vid);
+  if (selectedVertex === vid) selectedVertex = null;
+  updateVertexUI();
+  updateEdgeUI();
+  updateAlgoSelects();
+  render();
+}
+function resetCurve() {
+  if (selectedEdge) {
+    const e = edges.find(ee => ee.id === selectedEdge);
+    if (e) { e.curve = 0; document.getElementById('eCurveInput').value = 0; render(); }
+  }
+}
+
+// ─── PROMPTS (Modal) ───
+function promptVertexName(vid) {
+  const v = vertices.find(vv => vv.id === vid);
+  if (!v) return;
+  showModal('Rename Vertex', `
+    <div class="field"><label>Name for ${vid}</label>
+    <input id="modal-input" value="${v.name || ''}" placeholder="e.g. Warehouse A"></div>
+  `, () => {
+    const val = document.getElementById('modal-input').value;
+    v.name = val;
+    updateVertexUI();
+    render();
+  });
+  setTimeout(() => { const el = document.getElementById('modal-input'); if(el) el.focus(); }, 100);
+}
+
+function promptEdgeWeight(eid) {
+  const e = edges.find(ee => ee.id === eid);
+  if (!e) return;
+  showModal('Edit Edge Weight', `
+    <div class="field"><label>Weight for ${e.from} → ${e.to}</label>
+    <input id="modal-input" type="number" min="0" step="0.1" value="${e.weight}"></div>
+  `, () => {
+    const val = parseFloat(document.getElementById('modal-input').value);
+    if (!isNaN(val) && val >= 0) { pushUndo(); e.weight = val; updateEdgeUI(); render(); }
+  });
+  setTimeout(() => { const el = document.getElementById('modal-input'); if(el) el.focus(); }, 100);
+}
+
+function showModal(title, content, onOk) {
+  const overlay = document.getElementById('modal-overlay');
+  const modal = document.getElementById('modal-content');
+  modal.innerHTML = `
+    <h3>${title}</h3>
+    ${content}
+    <div class="modal-btns">
+      <button class="btn" style="background:var(--accent-blue)" id="modal-ok">OK</button>
+      <button class="btn danger" onclick="closeModal()">Cancel</button>
+    </div>
+  `;
+  overlay.classList.add('show');
+  document.getElementById('modal-ok').addEventListener('click', () => { onOk(); closeModal(); });
+  modal.addEventListener('keydown', e => { if(e.key === 'Enter') { onOk(); closeModal(); } });
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('show');
+}
+
+// ─── UNDO ───
+function pushUndo() {
+  undoStack.push(JSON.stringify({ vertices, edges, directed }));
+  if (undoStack.length > MAX_UNDO) undoStack.shift();
+}
+
+function undoAction() {
+  if (undoStack.length === 0) { toast('Nothing to undo', 'error'); return; }
+  const state = JSON.parse(undoStack.pop());
+  vertices = state.vertices;
+  edges = state.edges;
+  directed = state.directed;
+  document.getElementById('directedToggle').checked = directed;
+  selectedVertex = null;
+  selectedEdge = null;
+  updateVertexUI();
+  updateEdgeUI();
+  updateAlgoSelects();
+  render();
+  toast('Undo ↩', 'success');
+}
+
+// ─── FIT VIEW ───
+function fitView() {
+  if (vertices.length === 0) { camX = 0; camY = 0; camZoom = 1; render(); return; }
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  vertices.forEach(v => {
+    minX = Math.min(minX, v.x); maxX = Math.max(maxX, v.x);
+    minY = Math.min(minY, v.y); maxY = Math.max(maxY, v.y);
+  });
+  const pad = 80;
+  const gw = (maxX - minX) + pad*2;
+  const gh = (maxY - minY) + pad*2;
+  camX = (minX + maxX) / 2;
+  camY = (minY + maxY) / 2;
+  camZoom = Math.min(W / gw, H / gh, 2);
+  camZoom = Math.max(0.2, camZoom);
+  render();
+}
+
+// ─── CLEAR ───
+function clearGraph() {
+  if (vertices.length === 0 && edges.length === 0) return;
+  pushUndo();
+  vertices = []; edges = [];
+  nextVId = 1; nextEId = 1;
+  selectedVertex = null; selectedEdge = null;
+  stopAlgo();
+  updateVertexUI(); updateEdgeUI(); updateAlgoSelects();
+  render();
+  toast('Graph cleared', 'success');
+}
+
+// ─── SAVE / LOAD ───
+function saveState() {
+  const state = {
+    vertices, edges, directed, nextVId, nextEId,
+    cam: { x: camX, y: camY, zoom: camZoom },
+  };
+  localStorage.setItem('graphlab_state', JSON.stringify(state));
+  toast('Saved! 💾', 'success');
+}
+
+function loadState() {
+  const raw = localStorage.getItem('graphlab_state');
+  if (!raw) { toast('No saved state found', 'error'); return; }
+  try {
+    const state = JSON.parse(raw);
+    vertices = state.vertices || [];
+    edges = state.edges || [];
+    directed = state.directed || false;
+    nextVId = state.nextVId || 1;
+    nextEId = state.nextEId || 1;
+    if (state.cam) { camX = state.cam.x; camY = state.cam.y; camZoom = state.cam.zoom; }
+    document.getElementById('directedToggle').checked = directed;
+    selectedVertex = null; selectedEdge = null;
+    updateVertexUI(); updateEdgeUI(); updateAlgoSelects();
+    render();
+    toast('Loaded! 📂', 'success');
+  } catch(e) { toast('Failed to load state', 'error'); }
+}
+
+function autoLoadState() {
+  const raw = localStorage.getItem('graphlab_state');
+  if (raw) {
+    try {
+      const state = JSON.parse(raw);
+      vertices = state.vertices || [];
+      edges = state.edges || [];
+      directed = state.directed || false;
+      nextVId = state.nextVId || 1;
+      nextEId = state.nextEId || 1;
+      if (state.cam) { camX = state.cam.x; camY = state.cam.y; camZoom = state.cam.zoom; }
+      document.getElementById('directedToggle').checked = directed;
+    } catch(e) {}
+  }
+  updateAlgoSelects();
+}
+
+// ─── EXPORT PNG ───
+function exportPNG() {
+  const scale = 2;
+  const expCanvas = document.createElement('canvas');
+  const expW = W * scale;
+  const expH = H * scale;
+  expCanvas.width = expW;
+  expCanvas.height = expH;
+  const ectx = expCanvas.getContext('2d');
+
+  ectx.fillStyle = UI.canvasBg;
+  ectx.fillRect(0, 0, expW, expH);
+
+  ectx.save();
+  ectx.translate(expW/2, expH/2);
+  ectx.scale(camZoom * scale, camZoom * scale);
+  ectx.translate(-camX, -camY);
+
+  edges.forEach(e => {
+    const fromV = vertices.find(v => v.id === e.from);
+    const toV = vertices.find(v => v.id === e.to);
+    if (!fromV || !toV) return;
+
+    const cx2 = (fromV.x + toV.x) / 2;
+    const cy2 = (fromV.y + toV.y) / 2;
+    const dx = toV.x - fromV.x;
+    const dy = toV.y - fromV.y;
+    const len = Math.sqrt(dx*dx + dy*dy) || 1;
+    const nx = -dy / len;
+    const ny = dx / len;
+    const curveAmt = (e.curve || 0) * 0.5;
+    const cpx = cx2 + nx * curveAmt;
+    const cpy = cy2 + ny * curveAmt;
+
+    ectx.strokeStyle = UI.edgeColor;
+    ectx.lineWidth = EDGE_WIDTH;
+    ectx.beginPath();
+    if (curveAmt !== 0) {
+      ectx.moveTo(fromV.x, fromV.y);
+      ectx.quadraticCurveTo(cpx, cpy, toV.x, toV.y);
+    } else {
+      ectx.moveTo(fromV.x, fromV.y);
+      ectx.lineTo(toV.x, toV.y);
+    }
+    ectx.stroke();
+
+    const lx = curveAmt !== 0 ? cpx : cx2;
+    const ly = curveAmt !== 0 ? cpy : cy2;
+    ectx.font = 'bold 12px Inter, sans-serif';
+    ectx.textAlign = 'center';
+    ectx.textBaseline = 'middle';
+    const lt = String(e.weight);
+    const ltw = ectx.measureText(lt).width;
+    ectx.fillStyle = 'rgba(26,43,60,0.9)';
+    ectx.beginPath();
+    ectx.roundRect(lx - ltw/2 - 4, ly - 10, ltw + 8, 20, 4);
+    ectx.fill();
+    ectx.fillStyle = '#E0E0E0';
+    ectx.fillText(lt, lx, ly);
+  });
+
+  vertices.forEach(v => {
+    const x = Math.round(v.x);
+    const y = Math.round(v.y);
+    const r = VERTEX_RADIUS;
+    const fillColor = v.color || UI.vertexDefault;
+
+    ectx.fillStyle = fillColor;
+    ectx.beginPath();
+    ectx.arc(x, y, r, 0, Math.PI * 2);
+    ectx.fill();
+    
+    ectx.strokeStyle = UI.vertexBorder;
+    ectx.lineWidth = 2;
+    ectx.stroke();
+
+    ectx.font = 'bold 12px Inter, sans-serif';
+    ectx.textAlign = 'center';
+    ectx.textBaseline = 'middle';
+    ectx.fillStyle = (fillColor !== UI.vertexDefault && fillColor !== UI.gold) ? UI.textLight : UI.textDark;
+    ectx.fillText(v.id, x, y);
+
+    const label = v.name;
+    if (label) {
+      ectx.font = 'bold 14px Inter, sans-serif';
+      ectx.textAlign = 'center';
+      ectx.textBaseline = 'top';
+      const tw = ectx.measureText(label).width;
+      ectx.fillStyle = 'rgba(27,43,60,0.85)';
+      ectx.beginPath();
+      ectx.roundRect(x - tw/2 - 6, y + r + 6, tw + 12, 22, 4);
+      ectx.fill();
+      ectx.fillStyle = UI.textLight;
+      ectx.fillText(label, x, y + r + 10);
+    }
+  });
+
+  ectx.restore();
+
+  // Info stamp
+  ectx.fillStyle = 'rgba(0,0,0,0.6)';
+  ectx.fillRect(0, expH - 32, expW, 32);
+  ectx.font = 'bold 13px Inter, sans-serif';
+  ectx.fillStyle = '#FFFFFF';
+  ectx.textAlign = 'left';
+  ectx.textBaseline = 'middle';
+  ectx.fillText(`Graph Lab  |V|=${vertices.length}  |E|=${edges.length}  ${directed ? 'Directed' : 'Undirected'}`, 16, expH - 16);
+
+  const link = document.createElement('a');
+  link.download = 'graph_lab_export.png';
+  link.href = expCanvas.toDataURL('image/png');
+  link.click();
+  toast('PNG exported (scale 2×) 📷', 'success');
+}
+
+// ─── ALGO SELECTS ───
+function updateAlgoSelects() {
+  const selects = ['dijSrc','dijDst','primStart','flowSrc','flowSnk'];
+  selects.forEach(sid => {
+    const sel = document.getElementById(sid);
+    if (!sel) return;
+    const prev = sel.value;
+    const hasBlank = sid === 'dijDst';
+    sel.innerHTML = hasBlank ? '<option value="">— All —</option>' : '';
+    vertices.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v.id;
+      opt.textContent = v.name ? `${v.id} (${v.name})` : v.id;
+      sel.appendChild(opt);
+    });
+    if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
+  });
+}
+
+// ─── ALGORITHM EXECUTION ───
+async function apiCall(action, extra = {}) {
+  const body = {
+    action,
+    vertices: vertices.map(v => ({ id: v.id, x: v.x, y: v.y, name: v.name })),
+    edges: edges.map(e => ({ id: e.id, from: e.from, to: e.to, weight: e.weight })),
+    directed,
+    ...extra,
+  };
+  const res = await fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  return await res.json();
+}
+
+async function runDijkstra() {
+  const src = document.getElementById('dijSrc').value;
+  if (!src) { toast('Select a source vertex', 'error'); return; }
+  const dst = document.getElementById('dijDst').value || undefined;
+
+  toast('Running Dijkstra...', 'success');
+  const result = await apiCall('dijkstra', { source: src, target: dst });
+  if (result.error) { toast(result.error, 'error'); return; }
+  startAlgoAnimation(result.steps, 'dijkstra');
+}
+
+async function runPrim() {
+  const start = document.getElementById('primStart').value;
+  if (!start) { toast('Select a start vertex', 'error'); return; }
+
+  toast('Running Prim...', 'success');
+  const result = await apiCall('prim', { start });
+  if (result.error) { toast(result.error, 'error'); return; }
+  startAlgoAnimation(result.steps, 'prim');
+}
+
+async function runColoring() {
+  if (vertices.length === 0) { toast('No vertices', 'error'); return; }
+
+  toast('Running Welsh-Powell...', 'success');
+  const result = await apiCall('coloring');
+  if (result.error) { toast(result.error, 'error'); return; }
+  startAlgoAnimation(result.steps, 'coloring');
+}
+
+async function runFlow() {
+  const src = document.getElementById('flowSrc').value;
+  const snk = document.getElementById('flowSnk').value;
+  if (!src || !snk) { toast('Select source and sink', 'error'); return; }
+  if (src === snk) { toast('Source and sink must differ', 'error'); return; }
+
+  if (!directed) {
+    directed = true;
+    document.getElementById('directedToggle').checked = true;
+    toast('Switched to Directed mode for Flow', 'success');
+  }
+
+  toast('Running Edmonds-Karp...', 'success');
+  const result = await apiCall('flow', { source: src, sink: snk });
+  if (result.error) { toast(result.error, 'error'); return; }
+  startAlgoAnimation(result.steps, 'flow');
+}
+
+async function runAnalysis() {
+  const result = await apiCall('analyze');
+  if (result.error) { toast(result.error, 'error'); return; }
+
+  const div = document.getElementById('analysis-result');
+  let html = '';
+  html += `<span class="hl">|V| = ${result.vertexCount}</span>   <span class="hl">|E| = ${result.edgeCount}</span>\n`;
+  html += `Σdeg = ${result.sumDegrees}   (2|E| = ${result.edgeCount * 2})\n`;
+  html += `Connected: <span class="hl">${result.connected ? 'Yes ✓' : 'No ✗'}</span>`;
+  html += `   Components: ${result.componentCount}\n`;
+  if (result.hasNegativeWeight) html += `⚠ <span style="color:var(--accent-red)">Negative weight detected!</span>\n`;
+  html += `\nDegrees:\n`;
+  for (const [vid, deg] of Object.entries(result.degrees)) {
+    const v = vertices.find(vv => vv.id === vid);
+    const name = v && v.name ? ` (${v.name})` : '';
+    if (result.directed) {
+      html += `  ${vid}${name}: in=${result.inDegrees[vid]} out=${result.outDegrees[vid]}\n`;
+    } else {
+      html += `  ${vid}${name}: ${deg}\n`;
+    }
+  }
+  div.innerHTML = html;
+
+  const matArea = document.getElementById('matrix-area');
+  if (result.vertexCount <= 12) {
+    let mhtml = '<h4>Adjacency Matrix</h4>';
+    mhtml += buildMatrixHTML(result.adjacencyMatrix, result.vertexLabels);
+    mhtml += '<h4>Weight Matrix</h4>';
+    mhtml += buildMatrixHTML(result.weightMatrix, result.vertexLabels);
+    matArea.innerHTML = mhtml;
+  } else {
+    matArea.innerHTML = '<p style="font-size:12px;color:var(--text-muted)">Matrix too large to display (|V| > 12)</p>';
+  }
+}
+
+function buildMatrixHTML(mat, labels) {
+  let h = '<table class="mat-table"><tr><th></th>';
+  labels.forEach(l => h += `<th>${l}</th>`);
+  h += '</tr>';
+  mat.forEach((row, i) => {
+    h += `<tr><th>${labels[i]}</th>`;
+    row.forEach(v => h += `<td>${v}</td>`);
+    h += '</tr>';
+  });
+  h += '</table>';
+  return h;
+}
+
+// ─── ANIMATION SYSTEM ───
+function startAlgoAnimation(steps, type) {
+  stopAlgo();
+  algoSteps = steps;
+  algoStep = 0;
+  algoType = type;
+  algoPlaying = false;
+
+  const bar = document.getElementById('anim-bar');
+  bar.classList.add('show');
+
+  const slider = document.getElementById('anim-slider');
+  slider.max = steps.length - 1;
+  slider.value = 0;
+
+  updateAlgoDisplay();
+}
+
+function stopAlgo() {
+  algoSteps = [];
+  algoStep = 0;
+  algoPlaying = false;
+  algoType = '';
+  if (algoTimer) { clearTimeout(algoTimer); algoTimer = null; }
+  document.getElementById('anim-bar').classList.remove('show');
+  document.getElementById('anim-play-btn').textContent = '▶';
+  render();
+}
+
+function getCurrentStepData() {
+  if (algoSteps.length === 0) return null;
+  return algoSteps[Math.min(algoStep, algoSteps.length - 1)];
+}
+
+function updateAlgoDisplay() {
+  const slider = document.getElementById('anim-slider');
+  slider.value = algoStep;
+  document.getElementById('anim-step-label').textContent = `${algoStep + 1}/${algoSteps.length}`;
+
+  const step = getCurrentStepData();
+  if (step) {
+    document.getElementById('anim-desc').textContent = step.desc || '';
+  }
+  render();
+}
+
+function animFirst() { algoStep = 0; updateAlgoDisplay(); }
+function animLast() { algoStep = algoSteps.length - 1; updateAlgoDisplay(); }
+function animPrev() { if (algoStep > 0) { algoStep--; updateAlgoDisplay(); } }
+function animNext() {
+  if (algoStep < algoSteps.length - 1) { algoStep++; updateAlgoDisplay(); }
+  else { animPause(); }
+}
+function animSeek(val) { algoStep = parseInt(val); updateAlgoDisplay(); }
+
+function animTogglePlay() {
+  if (algoPlaying) { animPause(); } else { animPlay(); }
+}
+
+function animPlay() {
+  algoPlaying = true;
+  document.getElementById('anim-play-btn').textContent = '⏸';
+  document.getElementById('anim-play-btn').classList.add('active');
+  animTick();
+}
+
+function animPause() {
+  algoPlaying = false;
+  if (algoTimer) { clearTimeout(algoTimer); algoTimer = null; }
+  document.getElementById('anim-play-btn').textContent = '▶';
+  document.getElementById('anim-play-btn').classList.remove('active');
+}
+
+function animTick() {
+  if (!algoPlaying) return;
+  if (algoStep < algoSteps.length - 1) {
+    algoStep++;
+    updateAlgoDisplay();
+    algoTimer = setTimeout(animTick, 1000 / algoSpeed);
+  } else {
+    animPause();
+  }
+}
+
+// ─── PRESETS ───
+function loadPreset(name) {
+  pushUndo();
+  stopAlgo();
+  vertices = [];
+  edges = [];
+  nextVId = 1;
+  nextEId = 1;
+
+  switch(name) {
+    case 'logistics': presetLogistics(); break;
+    case 'city': presetCity(); break;
+    case 'exam': presetExam(); break;
+    case 'pipeline': presetPipeline(); break;
+  }
+
+  selectedVertex = null;
+  selectedEdge = null;
+  updateVertexUI();
+  updateEdgeUI();
+  updateAlgoSelects();
+  fitView();
+  toast(`Preset "${name}" loaded!`, 'success');
+}
+
+function presetLogistics() {
+  directed = false;
+  document.getElementById('directedToggle').checked = false;
+
+  const vs = [
+    {id:'v1',x:0,y:0,name:'Warehouse A'},
+    {id:'v2',x:200,y:-100,name:'Hub B'},
+    {id:'v3',x:200,y:100,name:'Hub C'},
+    {id:'v4',x:400,y:-150,name:'Store D'},
+    {id:'v5',x:400,y:0,name:'Store E'},
+    {id:'v6',x:400,y:150,name:'Store F'},
+    {id:'v7',x:600,y:0,name:'Depot G'},
+  ];
+  const es = [
+    {from:'v1',to:'v2',weight:4},{from:'v1',to:'v3',weight:2},
+    {from:'v2',to:'v4',weight:5},{from:'v2',to:'v5',weight:10},
+    {from:'v3',to:'v5',weight:3},{from:'v3',to:'v6',weight:8},
+    {from:'v4',to:'v7',weight:6},{from:'v5',to:'v7',weight:1},
+    {from:'v6',to:'v7',weight:7},{from:'v2',to:'v3',weight:1},
+  ];
+  vs.forEach(v => { vertices.push({...v, color: null}); });
+  es.forEach((e,i) => { edges.push({id:'e'+(i+1), ...e, curve:0}); });
+  nextVId = 8; nextEId = es.length + 1;
+}
+
+function presetCity() {
+  directed = false;
+  document.getElementById('directedToggle').checked = false;
+
+  const vs = [
+    {id:'v1',x:-200,y:-120,name:'City Hall'},
+    {id:'v2',x:0,y:-200,name:'Hospital'},
+    {id:'v3',x:200,y:-120,name:'School'},
+    {id:'v4',x:-200,y:80,name:'Park'},
+    {id:'v5',x:0,y:0,name:'Center'},
+    {id:'v6',x:200,y:80,name:'Market'},
+    {id:'v7',x:0,y:200,name:'Station'},
+    {id:'v8',x:-100,y:-60,name:'Library'},
+  ];
+  const es = [
+    {from:'v1',to:'v2',weight:7},{from:'v2',to:'v3',weight:8},
+    {from:'v1',to:'v4',weight:5},{from:'v1',to:'v8',weight:2},
+    {from:'v8',to:'v5',weight:3},{from:'v5',to:'v3',weight:9},
+    {from:'v4',to:'v5',weight:15},{from:'v5',to:'v6',weight:6},
+    {from:'v4',to:'v7',weight:6},{from:'v7',to:'v6',weight:11},
+    {from:'v5',to:'v7',weight:4},{from:'v2',to:'v8',weight:4},
+  ];
+  vs.forEach(v => { vertices.push({...v, color: null}); });
+  es.forEach((e,i) => { edges.push({id:'e'+(i+1), ...e, curve:0}); });
+  nextVId = 9; nextEId = es.length + 1;
+}
+
+function presetExam() {
+  directed = false;
+  document.getElementById('directedToggle').checked = false;
+
+  const vs = [
+    {id:'v1',x:-150,y:-100,name:'Math'},
+    {id:'v2',x:0,y:-180,name:'Physics'},
+    {id:'v3',x:150,y:-100,name:'Chem'},
+    {id:'v4',x:-180,y:60,name:'Bio'},
+    {id:'v5',x:0,y:0,name:'CS'},
+    {id:'v6',x:180,y:60,name:'English'},
+    {id:'v7',x:-80,y:160,name:'History'},
+    {id:'v8',x:80,y:160,name:'Art'},
+  ];
+  const es = [
+    {from:'v1',to:'v2',weight:1},{from:'v1',to:'v5',weight:1},
+    {from:'v2',to:'v3',weight:1},{from:'v2',to:'v5',weight:1},
+    {from:'v3',to:'v6',weight:1},{from:'v4',to:'v5',weight:1},
+    {from:'v4',to:'v7',weight:1},{from:'v5',to:'v6',weight:1},
+    {from:'v5',to:'v8',weight:1},{from:'v6',to:'v8',weight:1},
+    {from:'v7',to:'v8',weight:1},{from:'v1',to:'v4',weight:1},
+  ];
+  vs.forEach(v => { vertices.push({...v, color: null}); });
+  es.forEach((e,i) => { edges.push({id:'e'+(i+1), ...e, curve:0}); });
+  nextVId = 9; nextEId = es.length + 1;
+}
+
+function presetPipeline() {
+  directed = true;
+  document.getElementById('directedToggle').checked = true;
+
+  const vs = [
+    {id:'v1',x:-250,y:0,name:'Source S'},
+    {id:'v2',x:-80,y:-120,name:'Pump A'},
+    {id:'v3',x:-80,y:120,name:'Pump B'},
+    {id:'v4',x:100,y:-120,name:'Junction C'},
+    {id:'v5',x:100,y:120,name:'Junction D'},
+    {id:'v6',x:280,y:0,name:'Sink T'},
+  ];
+  const es = [
+    {from:'v1',to:'v2',weight:10},{from:'v1',to:'v3',weight:8},
+    {from:'v2',to:'v3',weight:5},{from:'v2',to:'v4',weight:7},
+    {from:'v3',to:'v5',weight:10},{from:'v4',to:'v5',weight:6},
+    {from:'v4',to:'v6',weight:10},{from:'v5',to:'v6',weight:8},
+    {from:'v3',to:'v4',weight:3},
+  ];
+  vs.forEach(v => { vertices.push({...v, color: null}); });
+  es.forEach((e,i) => { edges.push({id:'e'+(i+1), ...e, curve:0}); });
+  nextVId = 7; nextEId = es.length + 1;
+}
+
+// ─── SIDEBAR TOGGLE ───
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+// ─── TOAST NOTIFICATIONS ───
+function toast(msg, type = '') {
+  const container = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(() => el.remove(), 300); }, 2500);
+}
+
+// ─── INIT ───
+init();
+</script>
+</body>
+</html>
